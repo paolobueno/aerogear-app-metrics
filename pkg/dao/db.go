@@ -53,34 +53,56 @@ func (handler *DatabaseHandler) DoInitialSetup() error {
 		return errors.New("cannot setup database, must call Connect() first")
 	}
 	if _, err := handler.DB.Exec(`CREATE UNLOGGED TABLE IF NOT EXISTS mobilemetrics_app(
-		clientId varchar NOT NULL CHECK (clientId <> ''),
+		clientId char(80) NOT NULL CHECK (clientId <> ''),
 		event_time timestamptz NOT NULL DEFAULT now(),
 		client_time timestamptz DEFAULT now(),
-		app_id varchar NOT NULL,
-		sdk_version varchar NOT NULL,
-		app_version varchar NOT NULL
+		app_id char(40) NOT NULL,
+		sdk_version char(20) NOT NULL,
+		app_version char(20) NOT NULL,
+		PRIMARY KEY (clientId, event_time)
 	)`); err != nil {
+		return err
+	}
+
+	if _, err := handler.DB.Exec(`CREATE INDEX IF NOT EXISTS idx_app_client_id
+		ON mobilemetrics_app using hash (clientId)`); err != nil {
 		return err
 	}
 
 	if _, err := handler.DB.Exec(`CREATE UNLOGGED TABLE IF NOT EXISTS mobilemetrics_device(
-		clientId varchar NOT NULL CHECK (clientId <> ''),
+		clientId char(80) NOT NULL CHECK (clientId <> ''),
 		event_time timestamptz NOT NULL DEFAULT now(),
 		client_time timestamptz DEFAULT now(),
-		platform varchar NOT NULL,
-		platform_version varchar NOT NULL
+		platform char(20) NOT NULL,
+		platform_version char(20) NOT NULL,
+		PRIMARY KEY (clientId, event_time)
 	)`); err != nil {
 		return err
 	}
 
+	if _, err := handler.DB.Exec(`CREATE INDEX IF NOT EXISTS idx_device_client_id
+		ON mobilemetrics_device using hash (clientId)`); err != nil {
+		return err
+	}
+
 	if _, err := handler.DB.Exec(`CREATE UNLOGGED TABLE IF NOT EXISTS mobilemetrics_security(
-		clientId varchar NOT NULL CHECK (clientId <> ''),
+		clientId char(80) NOT NULL CHECK (clientId <> ''),
 		event_time timestamptz NOT NULL DEFAULT now(),
 		client_time timestamptz DEFAULT now(),
-		id varchar NOT NULL,
-		name varchar NOT NULL,
-		passed boolean
+		id char(80) NOT NULL,
+		name char(40) NOT NULL,
+		passed boolean,
+		PRIMARY KEY (clientId, event_time)
 	)`); err != nil {
+		return err
+	}
+
+	if _, err := handler.DB.Exec(`CREATE INDEX IF NOT EXISTS idx_security_client_id
+		ON mobilemetrics_security using hash (clientId)`); err != nil {
+		return err
+	}
+
+	if _, err := handler.DB.Exec(`)`); err != nil {
 		return err
 	}
 	return nil
