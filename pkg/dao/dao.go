@@ -33,19 +33,18 @@ func (m *MetricsDAO) RunInTransaction(cb func(*sql.Tx) error) (err error) {
 
 // Create a metrics record
 func (m *MetricsDAO) Create(clientId string, metric mobile.Metric, clientTime *time.Time) error {
-	if clientTime == nil {
-		*clientTime = time.Now()
-	}
+	eventTime := time.Now()
 	return m.RunInTransaction(func(tx *sql.Tx) error {
 		if metric.Data.App != nil {
 			appMetric := metric.Data.App
 			stmt, err := tx.Prepare(`INSERT INTO mobilemetrics_app (
 				clientId,
 				client_time,
+				event_time,
 				app_id,
 				sdk_version,
 				app_version
-			) VALUES($1, $2, $3, $4, $5)`)
+			) VALUES($1, $2, $3, $4, $5, $6)`)
 			if err != nil {
 				return err
 			}
@@ -53,6 +52,7 @@ func (m *MetricsDAO) Create(clientId string, metric mobile.Metric, clientTime *t
 			if _, err := stmt.Exec(
 				clientId,
 				clientTime,
+				eventTime,
 				appMetric.ID,
 				appMetric.SDKVersion,
 				appMetric.AppVersion,
@@ -65,15 +65,17 @@ func (m *MetricsDAO) Create(clientId string, metric mobile.Metric, clientTime *t
 			stmt, err := tx.Prepare(`INSERT INTO mobilemetrics_device (
 				clientId,
 				client_time,
+				event_time,
 				platform,
 				platform_version
-			) VALUES($1, $2, $3, $4)`)
+			) VALUES($1, $2, $3, $4, $5)`)
 			if err != nil {
 				return err
 			}
 			if _, err := stmt.Exec(
 				clientId,
 				clientTime,
+				eventTime,
 				deviceMetric.Platform,
 				deviceMetric.PlatformVersion,
 			); err != nil {
@@ -84,10 +86,11 @@ func (m *MetricsDAO) Create(clientId string, metric mobile.Metric, clientTime *t
 			stmt, err := tx.Prepare(`INSERT INTO mobilemetrics_security (
 				clientId,
 				client_time,
+				event_time,
 				id,
 				name,
 				passed
-			) VALUES($1, $2, $3, $4, $5)`)
+			) VALUES($1, $2, $3, $4, $5, $6)`)
 			if err != nil {
 				return err
 			}
@@ -95,6 +98,7 @@ func (m *MetricsDAO) Create(clientId string, metric mobile.Metric, clientTime *t
 				if _, err := stmt.Exec(
 					clientId,
 					clientTime,
+					eventTime,
 					securityMetric.Id,
 					securityMetric.Name,
 					securityMetric.Passed,
