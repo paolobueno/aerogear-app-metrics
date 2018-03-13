@@ -34,6 +34,9 @@ func (m *MetricsDAO) RunInTransaction(cb func(*sql.Tx) error) (err error) {
 // Create a metrics record
 func (m *MetricsDAO) Create(clientId string, metric mobile.Metric, clientTime *time.Time) error {
 	eventTime := time.Now()
+	if clientTime == nil {
+		clientTime = &eventTime
+	}
 	return m.RunInTransaction(func(tx *sql.Tx) error {
 		if metric.Data.App != nil {
 			appMetric := metric.Data.App
